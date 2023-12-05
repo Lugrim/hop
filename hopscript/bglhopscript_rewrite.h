@@ -24,8 +24,8 @@
 
 #  define HOP_REWRITE_LOCATIONS(n) \
    static Rewrite_CE hop_rewrite_locations[n] = { NULL }
-#  define HOP_REWRITE_INIT() \
-     init_rewrite_lib();
+#  define HOP_REWRITE_INIT(n) \
+     init_rewrite_lib(n);
 #  define HOP_REWRITE_CACHE_HIT(n) \
      BINREWRITELIB_EXPAND_LABEL(n):
 #  define HOP_REWRITE_CACHE_MISS(n, obj) \
