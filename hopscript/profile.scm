@@ -428,12 +428,12 @@
 	 (cond
 	    ((and (<= (string-length s) sz) (<= o 10000))
 	     s)
-	    ((< o 1000)
-	     (number->string o))
-	    ((< o 1000000)
-	     (string-append (number->string (/int o 1000)) ".10^3"))
-	    ((< o 1000000000)
-	     (string-append (number->string (/int o 1000000)) ".10^6"))
+	    ;; ((< o 1000)
+	    ;;  (number->string o))
+	    ;; ((< o 1000000)
+	    ;;  (string-append (number->string (/int o 1000)) ".10^3"))
+	    ;; ((< o 1000000000)
+	    ;;  (string-append (number->string (/int o 1000000)) ".10^6"))
 	    (else
 	     s))))
 
@@ -442,12 +442,12 @@
 	 (cond
 	    ((and (<= (string-length s) sz) (<u32 o #u32:10000))
 	     s)
-	    ((<u32 o #u32:1000)
-	     (number->string o))
-	    ((<u32 o #u32:1000000)
-	     (string-append (number->string (/u32 o #u32:1000)) ".10^3"))
-	    ((<u32 o #u32:1000000000)
-	     (string-append (number->string (/u32 o #u32:1000000)) ".10^6"))
+	    ;; ((<u32 o #u32:1000)
+	    ;;  (number->string o))
+	    ;; ((<u32 o #u32:1000000)
+	    ;;  (string-append (number->string (/u32 o #u32:1000)) ".10^3"))
+	    ;; ((<u32 o #u32:1000000000)
+	    ;;  (string-append (number->string (/u32 o #u32:1000000)) ".10^6"))
 	    (else
 	     s))))
 
@@ -456,14 +456,14 @@
 	 (cond
 	    ((and (<= (string-length s) sz) (<llong o #l10000))
 	     s)
-	    ((<llong o #l1000)
-	     (number->string o))
-	    ((<llong o #l1000000)
-	     (string-append (number->string (/llong o #l1000)) ".10^3"))
-	    ((<llong o #l1000000000)
-	     (string-append (number->string (/llong o #l1000000)) ".10^6"))
-	    ((<llong o #l1000000000000)
-	     (string-append (number->string (/llong o #l1000000000)) ".10^9"))
+	    ;; ((<llong o #l1000)
+	    ;;  (number->string o))
+	    ;; ((<llong o #l1000000)
+	    ;;  (string-append (number->string (/llong o #l1000)) ".10^3"))
+	    ;; ((<llong o #l1000000000)
+	    ;;  (string-append (number->string (/llong o #l1000000)) ".10^6"))
+	    ;; ((<llong o #l1000000000000)
+	    ;;  (string-append (number->string (/llong o #l1000000000)) ".10^9"))
 	    (else
 	     s))))
 
