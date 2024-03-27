@@ -15,8 +15,6 @@
 #include <capstone/capstone.h>
 #include <capstone/x86.h>
 
-#include "bglhopscript_types.h"
-
 #if defined(BENCH) || defined(DBG)
 #include <signal.h>
 #define SIGTRAP 5
@@ -499,6 +497,46 @@ int write_first_instr(size_t* i, char* code, FIC context)
 		(*i) += 2;
 		code[*i] = 0xC7;
 		(*i)++;
+		break;
+	case X86_REG_R8D:
+		if(context.length < 6) return 3;
+		*((uint16_t*)(code + (size_t)*i)) = 0xB841;
+		(*i) += 2;
+		break;
+	case X86_REG_R9D:
+		if(context.length < 6) return 3;
+		*((uint16_t*)(code + (size_t)*i)) = 0xB941;
+		(*i) += 2;
+		break;
+	case X86_REG_R10D:
+		if(context.length < 6) return 3;
+		*((uint16_t*)(code + (size_t)*i)) = 0xBA41;
+		(*i) += 2;
+		break;
+	case X86_REG_R11D:
+		if(context.length < 6) return 3;
+		*((uint16_t*)(code + (size_t)*i)) = 0xBB41;
+		(*i) += 2;
+		break;
+	case X86_REG_R12D:
+		if(context.length < 6) return 3;
+		*((uint16_t*)(code + (size_t)*i)) = 0xBC41;
+		(*i) += 2;
+		break;
+	case X86_REG_R13D:
+		if(context.length < 6) return 3;
+		*((uint16_t*)(code + (size_t)*i)) = 0xBD41;
+		(*i) += 2;
+		break;
+	case X86_REG_R14D:
+		if(context.length < 6) return 3;
+		*((uint16_t*)(code + (size_t)*i)) = 0xBE41;
+		(*i) += 2;
+		break;
+	case X86_REG_R15D:
+		if(context.length < 6) return 3;
+		*((uint16_t*)(code + (size_t)*i)) = 0xBF41;
+		(*i) += 2;
 		break;
 	case X86_REG_EAX:
 		if(context.length < 5) return 3;
