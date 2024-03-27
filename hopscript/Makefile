@@ -46,7 +46,7 @@ _OBJECTS = types object function string number regexp boolean \
   symbol promise generator proxy reflect map set spawn expanders profile \
   arithmetic arithmetic32 arithmetic64 builtin names vector bigint url
 
-_C_OBJECTS = _bglhopscript
+_C_OBJECTS = _bglhopscript RewriteLib
 
 OBJECTS = $(_OBJECTS:%=o/%.o) $(_C_OBJECTS:%=o/%.o)
 EOBJECTS = o/make_lib.o
@@ -123,6 +123,9 @@ o/expanders.o: expanders.sch public_expd.sch property_expd.sch \
   arithmetic.sch array.sch number.sch call.sch function.sch arguments.sch \
   stringliteral_expd.sch types_expd.sch constants_expd.sch names_expd.sch
 o/function.o: types.sch stringliteral.sch property.sch function.sch
+o/RewriteLib.o: RewriteLib.c
+	@ $(call compile2,$(CCOMP),$(CCFLAGS) -g -DHOP_REWRITE_OPCODE, -c $< -o $@)
+
 
 #bdepend start (don't edit)
 #*---------------------------------------------------------------------*/

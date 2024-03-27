@@ -24,7 +24,7 @@
 #  include "RewriteLib.h"
 
 #  define HOP_REWRITE_LOCATIONS(n) \
-   static struct hop_rewriteinfo hop_rewriteinfo[n] = { NULL }
+   static struct hop_rewriteinfo hop_rewriteinfo[n] = { 0 }
 #  define HOP_REWRITE_INIT(n) \
      init_rewrite_lib(n);
 #  define HOP_REWRITE_IMAP_CACHE_HIT(n) \
