@@ -40,7 +40,7 @@ POPDIRS		= runtime hopscheme scheme2js hopscript js2scheme \
 build: build-sans-modules
 	$(MAKE) -C node_modules
 
-build-sans-modules: bindir libdir lib weblets widget nodejs doc \
+build-sans-modules: bindir libdir lib widget nodejs \
   $(BUILDSPECIFIC) bin share
 
 bindir:
@@ -49,7 +49,7 @@ bindir:
 libdir:
 	mkdir -p lib
 
-bin: bindir hopc-bin src-bin hopsh-bin hopreplay-bin hophz-bin
+bin: bindir hopc-bin src-bin hopsh-bin
 
 hopc-bin: lib
 	$(MAKE) -C hopc build
@@ -145,7 +145,7 @@ changelog:
 #*---------------------------------------------------------------------*/
 #*    install                                                          */
 #*---------------------------------------------------------------------*/
-install: install-quick install-share install-weblets $(INSTALLSPECIFIC)
+install: install-quick install-share $(INSTALLSPECIFIC)
 
 install-share: hop-dirs
 	$(MAKE) -C share install
@@ -164,7 +164,6 @@ install-quick: hop-dirs install-init install-config
 	$(MAKE) -C src install && \
 	$(MAKE) -C hopsh install && \
 	$(MAKE) -C hopc install && \
-	$(MAKE) -C hophz install && \
 	$(MAKE) -C node_modules install && \
 	$(MAKE) -C etc install && \
 	if [ "$(NODOC) " != "yes " -a "$(THREADS) " = "yes " ]; then \
