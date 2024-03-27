@@ -70,7 +70,7 @@ libraries="hop hopwidget web hopscheme scheme2js multimedia sqlite js2scheme hop
 bglcloselibs="web multimedia openpgp"
 bglextracloselibs=
 
-extralibs=
+extralibs=-lcapstone
 bglextralibs="biglooweb bigloomultimedia biglooopenpgp"
 hopapplibs=
 
