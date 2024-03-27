@@ -44,6 +44,8 @@ uint16_t protected = 0;
 
 long pagesize;
 
+int What_Should_RewriteLib_Do;
+
 ///////////////
 // FUNCTIONS //
 ///////////////
@@ -113,6 +115,9 @@ void init_rewrite_lib(
 		)
 {
 	static int init = 0;
+	// extern int What_Should_RewriteLib_Do;
+	// Parse a 0-9 char into the equivalent integer
+	What_Should_RewriteLib_Do = *getenv("REWRITE_LEVEL") - 48;
     // already_rewritten = rewritten_locations;
 	if (init == 0) {
     	pagesize = sysconf(_SC_PAGE_SIZE);
@@ -168,6 +173,7 @@ void free_disassemble(csh* disas_handle, cs_insn** disas_insn, size_t disas_coun
 /////////////////////////////////////////////////////////
 int disassemble(void* location, cs_insn** disas_insn, size_t* disas_count)
 {
+
     // capstone data structures
     csh disas_handle = 0; // Disassembly handle
 
@@ -760,6 +766,8 @@ void write_offset(char* location, long offset, size_t* i)
  *  3 : Not enough space for instruction with immediates
  *  4 : Offset too big for targeted instruction size
  *  5 : Already disassembled and was invalid
+ *  6 : This was a single instruction, we want pairs only
+ *  7 : Finished because of REWRITE_LEVEL
  */
 int rewrite_opcode(
 		void* location,
@@ -771,19 +779,24 @@ int rewrite_opcode(
 #endif
 		)
 {
-   // fprintf(stderr, "=== RRRRRRRRRRRRRRRRRRRR ===\n");
-   static long cnt = 0;
-   // struct BgL_jsobjectz00_bgl *o = (struct BgL_jsobjectz00_bgl *)COBJECT(obj);
-   struct BgL_jspropertycachez00_bgl *c = (struct BgL_jspropertycachez00_bgl *)cache;
- 
+	// fprintf(stderr, "REWRITE_LEVEL = %d\n", What_Should_RewriteLib_Do);
+	if(What_Should_RewriteLib_Do <= Nothing) {
+		return 7;
+	}
+
+	// fprintf(stderr, "=== RRRRRRRRRRRRRRRRRRRR ===\n");
+	static long cnt = 0;
+	// struct BgL_jsobjectz00_bgl *o = (struct BgL_jsobjectz00_bgl *)COBJECT(obj);
+	struct BgL_jspropertycachez00_bgl *c = (struct BgL_jspropertycachez00_bgl *)cache;
+
 #ifdef COUNT_WHATS_HAPPENING
-   calls_to_rewrite_opcode++;
+	calls_to_rewrite_opcode++;
 #endif	
-   // fprintf(stderr, "============ rewrite #%d loc=%d cache=%p obj=%p MATCH=%d\n", cnt++, c->BgL_pointz00, cache, obj, o->BgL_cmapz00 == c->BgL_imapz00);
+	// fprintf(stderr, "============ rewrite #%d loc=%d cache=%p obj=%p MATCH=%d\n", cnt++, c->BgL_pointz00, cache, obj, o->BgL_cmapz00 == c->BgL_imapz00);
 
 	// return 0;
 
-    long offset_value = c->BgL_iindexz00;
+	long offset_value = c->BgL_iindexz00;
 
 	FIC disas_context = 
 	{
@@ -800,53 +813,62 @@ int rewrite_opcode(
 		},
 	};
 
-    size_t i = 0;
+	size_t i = 0;
 
-    char* code = NULL; // Actual location in code of the instruction to rewrite
+	char* code = NULL; // Actual location in code of the instruction to rewrite
 
 #ifdef COUNT_WHATS_HAPPENING
 	first_call_to_rewrite_opcode++;
 #endif
 
-    long *offset = &(c->BgL_iindexz00);
+	long *offset = &(c->BgL_iindexz00);
 
 	// fprintf(stderr, "Offset computed while disassembling is %p\n", offset);
 
-    // If we never rewrote here, search for the instruction we want to rewrite
+	// If we never rewrote here, search for the instruction we want to rewrite
 #ifdef DEBUG_VERBOSE
-    fprintf(stderr, "=== starting to look for instruction ===\n");
-    int rc =
+	fprintf(stderr, "=== starting to look for instruction ===\n");
+	int rc =
 #endif
 		look_for_instruction(location, offset, &code, &disas_context);
 
-    if (code == NULL) {
-        fprintf(stderr, "WARNING: could not find instruction (Access %ld)", c->BgL_pointz00);
+	if (code == NULL) {
+		fprintf(stderr, "WARNING: could not find instruction (Access %ld)", c->BgL_pointz00);
 #ifdef DEBUG_VERBOSE
-        fprintf(stderr, ". look_for_instruction returned %d", rc);
+		fprintf(stderr, ". look_for_instruction returned %d", rc);
 #endif
-        fprintf(stderr, "\n");
-        return 1;
-    }
+		fprintf(stderr, "\n");
+		saved_context->status = INVALID;
+		// fprintf(stderr, "unoptimized %p\n", location + i);
+		return 1;
+	}
 
 #ifdef COUNT_WHATS_HAPPENING
-		could_do_find_instruction++;
+	could_do_find_instruction++;
 #endif
+
+	if(What_Should_RewriteLib_Do <= Disassemble) {
+		return 7;
+	}
 
 #ifdef DEBUG_VERBOSE
-    fprintf(stderr, "=== unprotecting page ===\n");
+	fprintf(stderr, "=== unprotecting page ===\n");
 #endif
-    unprotect_page(code);
+	unprotect_page(code);
+
+	if(What_Should_RewriteLib_Do <= Mprotect) {
+		return 7;
+	}
 
 #ifdef DEBUG_VERBOSE
-    fprintf(stderr, "%zd bytes long instruction at %p\n", disas_context.length, code);
+	fprintf(stderr, "%zd bytes long instruction at %p\n", disas_context.length, code);
 #endif
 
-    int wfr;
+	int wfr;
 
 #ifdef DEBUG_VERBOSE
-    fprintf(stderr, "=== rewriting instruction following size... ===\n");
+	fprintf(stderr, "=== rewriting instruction following size... ===\n");
 #endif
-
 	if (disas_context.next_load_taken) {
 #ifdef DEBUG_VERBOSE
 		fprintf(stderr, "This is a pair of instructions!\n");
@@ -855,61 +877,64 @@ int rewrite_opcode(
 		saved_context->second_loc = code + i;
 		saved_context->status = DOUBLE;
 	} else {
+		if(What_Should_RewriteLib_Do <= Rewrite_Pair) {
+			saved_context->status = INVALID;
+			return 7;
+		}
+
 		wfr = write_first_instr(&i, code, disas_context);
 		saved_context->first_loc = code + i;
 		saved_context->status = SINGLE;
 	}
-	
+
 	saved_context->original_offset = disas_context.next_load_memory.disp;
 	saved_context->original_multiplier = disas_context.next_load_memory.scale;
 
-    if (wfr) {
+	if (wfr) {
 		saved_context->status = INVALID;
-#ifdef DEBUG_VERBOSE
-#endif
 		fprintf(stderr, "ERROR: Could not write following register ; return code %d", wfr);
 		if(wfr == 3) {
 			fprintf(stderr, " (Not enough space)\n");
-#ifdef DEBUG_VERBOSE
-#endif
+			// fprintf(stderr, "unoptimized %p\n", location + i);
 			return 3;
 		}
-			fprintf(stderr, "\n");
-#ifdef DEBUG_VERBOSE
-#endif
-        return 2;
-    }
+		fprintf(stderr, "\n");
+
+		// fprintf(stderr, "unoptimized %p\n", location + i);
+		return 2;
+	}
 
 #ifdef COUNT_WHATS_HAPPENING
-		can_rewrite_instruction++;
+	can_rewrite_instruction++;
 #endif
 
 #ifdef DEBUG_VERBOSE
-    fprintf(stderr, "= rewriting offset =\n");
+	fprintf(stderr, "= rewriting offset =\n");
 #endif
 	if (disas_context.next_load_taken) {
 #ifdef DEBUG_VERBOSE
-    fprintf(stderr, "Computed offset: 0x%lx (offset=0x%lx, scale=0x%lx, value=0x%lx)\n",
-					COMPUTE_OFFSET(saved_context->original_offset,
+		fprintf(stderr, "Computed offset: 0x%lx (offset=0x%lx, scale=0x%lx, value=0x%lx)\n",
+				COMPUTE_OFFSET(saved_context->original_offset,
 					saved_context->original_multiplier,
 					offset_value),
-					saved_context->original_offset,
-					saved_context->original_multiplier,
-					offset_value
-			);
+				saved_context->original_offset,
+				saved_context->original_multiplier,
+				offset_value
+			   );
 #endif
-			write_offset(code + i,
-					COMPUTE_OFFSET(saved_context->original_offset,
+		write_offset(code + i,
+				COMPUTE_OFFSET(saved_context->original_offset,
 					saved_context->original_multiplier,
 					offset_value),
-					&i);
-	} else {
+				&i);
+	}
+	else {
 		write_offset(code + i, offset_value, &i);
 	}
 #ifdef DEBUG_VERBOSE
-    fprintf(stderr, "= padding with NOPs =\n");
+	fprintf(stderr, "= padding with NOPs =\n");
 #endif
-    nop_pad(disas_context.length, i, code);
+	nop_pad(disas_context.length, i, code);
 
 #ifdef TRACE_HIT_MISS
 	*hop_hit_increment = 1;

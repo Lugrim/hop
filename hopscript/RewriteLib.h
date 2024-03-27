@@ -22,6 +22,14 @@
 #define BGL_MODULE_TYPE_DEFINITIONS
 #include "bglhopscript_types.h"
 
+typedef enum {
+	Nothing = 0,
+	Disassemble = 1,
+	Mprotect = 2,
+	Rewrite_Pair = 3,
+	Rewrite_With_Fallback = 4,
+} What_Can_RewriteLib_Do;
+
 typedef struct BgL_threadz00_bgl {
    header_t header;
    obj_t widening;
