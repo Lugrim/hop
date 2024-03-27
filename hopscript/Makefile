@@ -123,8 +123,8 @@ o/expanders.o: expanders.sch public_expd.sch property_expd.sch \
   arithmetic.sch array.sch number.sch call.sch function.sch arguments.sch \
   stringliteral_expd.sch types_expd.sch constants_expd.sch names_expd.sch
 o/function.o: types.sch stringliteral.sch property.sch function.sch
-o/RewriteLib.o: RewriteLib.c
-	@ $(call compile2,$(CCOMP),$(CCFLAGS) -g -DHOP_REWRITE_OPCODE, -c $< -o $@)
+o/RewriteLib.o: RewriteLib.c bglhopscript_types.h
+	@ $(call compile2,$(CCOMP),$(CCFLAGS) $(REWRITE_FLAGS), -c $< -o $@)
 
 
 #bdepend start (don't edit)

@@ -12,7 +12,6 @@
 /*    If only imap should be used then, add the option                 */
 /*      --js-cspecs-get "(imap)"                                       */
 /*=====================================================================*/
-=======
 #ifndef REWRITELIB_H
 #define REWRITELIB_H
 
@@ -62,17 +61,6 @@ struct hop_rewriteinfo {
 // Binary dynamic rewriting macros
 #define BINREWRITELIB_REWRITEINFO(n) \
    ((hop_rewriteinfo[n].labeladdr = &&BINREWRITELIB_EXPAND_LABEL(n)), (obj_t)(&(hop_rewriteinfo[n])))
-<<<<<<< HEAD
-   
-/*---------------------------------------------------------------------*/
-/*    static int                                                       */
-/*    init_rewite_lib ...                                              */
-/*---------------------------------------------------------------------*/
-static int init_rewrite_lib(long n) {
-   fprintf(stderr, "============ init_rewrite_lib, n=%d\n", n);
-}
-=======
->>>>>>> 09a832fcd (Working RewriteLib?)
 
 #define BINREWRITELIB_EXPAND_LABEL(uid) LBL_HOPC_ ## uid ## _MOV_REWRITE
 
