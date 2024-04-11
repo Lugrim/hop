@@ -117,7 +117,10 @@ void init_rewrite_lib(
 	static int init = 0;
 	// extern int What_Should_RewriteLib_Do;
 	// Parse a 0-9 char into the equivalent integer
-	What_Should_RewriteLib_Do = *getenv("REWRITE_LEVEL") - 48;
+	char* env = getenv("REWRITE_LEVEL");
+	if(env != NULL && *env >= '0' && *env <= '9') {
+		What_Should_RewriteLib_Do = *env - '0';
+	}
     // already_rewritten = rewritten_locations;
 	if (init == 0) {
     	pagesize = sysconf(_SC_PAGE_SIZE);
@@ -447,6 +450,12 @@ int write_first_instr(size_t* i, char* code, FIC context)
 	fprintf(stderr, "L=%zd\n", context.length);
 #endif
 	x86_reg reg = context.offset_reg;
+
+	if(What_Should_RewriteLib_Do == Swap_Some_Bytes_Around) {
+		DOUBLE_SWAP(code, char);
+		return 0;
+	}
+
 	switch (reg) {
 	case X86_REG_RAX:
 		if(context.length < 7) return 3;
@@ -735,6 +744,11 @@ int write_second_instr(size_t* i, char* code, FIC context)
 		break;
 	}
 
+	if(What_Should_RewriteLib_Do == Swap_Some_Bytes_Around) {
+		DOUBLE_SWAP(code, char);
+		return 0;
+	}
+
 	code[*i] = rex;
 	(*i)++;
 	code[*i] = 0x8B;
@@ -744,15 +758,19 @@ int write_second_instr(size_t* i, char* code, FIC context)
     return 0;
 }
 
-void write_offset_at_known_place(char* location, long offset)
-{
-    *((uint32_t*)location) = (uint32_t)offset;
-}
+// void write_offset_at_known_place(char* location, long offset)
+// {
+//     *((uint32_t*)location) = (uint32_t)offset;
+// }
 
 void write_offset(char* location, long offset, size_t* i)
 {
+	if(What_Should_RewriteLib_Do == Swap_Some_Bytes_Around) {
+		return;
+	}
     *((uint32_t*)location) = (uint32_t)offset;
     (*i) += 4;
+
 }
 
 ///////////////////////
@@ -783,6 +801,8 @@ int rewrite_opcode(
 	if(What_Should_RewriteLib_Do <= Nothing) {
 		return 7;
 	}
+
+	static char buffer[20];
 
 	// fprintf(stderr, "=== RRRRRRRRRRRRRRRRRRRR ===\n");
 	static long cnt = 0;
@@ -841,6 +861,10 @@ int rewrite_opcode(
 		saved_context->status = INVALID;
 		// fprintf(stderr, "unoptimized %p\n", location + i);
 		return 1;
+	}
+
+	if(What_Should_RewriteLib_Do == Rewrite_In_A_Buffer) {
+		code = buffer;
 	}
 
 #ifdef COUNT_WHATS_HAPPENING
@@ -934,7 +958,9 @@ int rewrite_opcode(
 #ifdef DEBUG_VERBOSE
 	fprintf(stderr, "= padding with NOPs =\n");
 #endif
-	nop_pad(disas_context.length, i, code);
+	if(What_Should_RewriteLib_Do != Swap_Some_Bytes_Around) {
+		nop_pad(disas_context.length, i, code);
+	}
 
 #ifdef TRACE_HIT_MISS
 	*hop_hit_increment = 1;
