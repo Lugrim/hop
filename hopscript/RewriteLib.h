@@ -28,6 +28,8 @@ typedef enum {
 	Mprotect = 2,
 	Rewrite_Pair = 3,
 	Rewrite_With_Fallback = 4,
+	Rewrite_In_A_Buffer = 5,
+	Swap_Some_Bytes_Around = 6,
 } What_Can_RewriteLib_Do;
 
 typedef struct BgL_threadz00_bgl {
@@ -59,6 +61,8 @@ struct hop_rewriteinfo {
    Rewrite_CE saved_context;
 };
 
+extern int What_Should_RewriteLib_Do;
+
 #ifndef FAKE_JS_H
 // #include "FakeJs.h"
 #endif
@@ -66,6 +70,23 @@ struct hop_rewriteinfo {
 ////////////
 // MACROS //
 ////////////
+
+#define WRITE_OFFSET_AT_KNOWN_PLACE(location, offset) *((uint32_t*)(location)) = (uint32_t)(offset);
+
+#define DOUBLE_SWAP(buffer, type) \
+	{ \
+	static long tmp = 0; \
+	tmp = *((long*) (buffer)); \
+	volatile type swaptmp = *((type*) (buffer)); \
+	*((type*) (buffer)) = *((type*) ((buffer) + sizeof(type))); \
+	*((type*) ((buffer) + sizeof(type))) = swaptmp; \
+	swaptmp = *((type*) (buffer)); \
+	*((type*) (buffer)) = *((type*) ((buffer) + sizeof(type))); \
+	*((type*) ((buffer) + sizeof(type))) = swaptmp; \
+	if(tmp != *((long*) (buffer))) \
+		fprintf(stderr, "INSTRUCTIONS DIFFER WHEN SWAPPING BYTES\n"); \
+	}
+
 // Binary dynamic rewriting macros
 #define BINREWRITELIB_REWRITEINFO(n) \
    ((hop_rewriteinfo[n].labeladdr = &&BINREWRITELIB_EXPAND_LABEL(n)), (obj_t)(&(hop_rewriteinfo[n])))
@@ -81,23 +102,31 @@ struct hop_rewriteinfo {
 			struct BgL_jspropertycachez00_bgl *RwL_cache = (struct BgL_jspropertycachez00_bgl *)COBJECT(cache); \
 			struct hop_rewriteinfo *RwL_info = (struct hop_rewriteinfo *)RwL_cache->BgL_rewriteinfoz00; \
 			if (RwL_info && RwL_info != BUNSPEC) { \
-				Rewrite_CE *saved_context = &(RwL_info->saved_context); \
-				switch (saved_context->status) { \
+				Rewrite_CE saved_context = RwL_info->saved_context; \
+				switch (saved_context.status) { \
 					case SINGLE: \
-						write_offset_at_known_place(saved_context->first_loc, \
-									 RwL_cache->BgL_iindexz00); \
+						if (What_Should_RewriteLib_Do == Swap_Some_Bytes_Around) { \
+							DOUBLE_SWAP(saved_context.first_loc, char); \
+						} else { \
+							WRITE_OFFSET_AT_KNOWN_PLACE(saved_context.first_loc, \
+										 RwL_cache->BgL_iindexz00); \
+						} \
 						break; \
 					case DOUBLE: \
-						write_offset_at_known_place(saved_context->second_loc, \
-									 BINREWRITELIB_COMPUTE_OFFSET(saved_context->original_offset, \
-										 saved_context->original_multiplier, \
-										 RwL_cache->BgL_iindexz00)); \
+						if (What_Should_RewriteLib_Do == Swap_Some_Bytes_Around) { \
+							DOUBLE_SWAP(saved_context.second_loc, char); \
+						} else { \
+							WRITE_OFFSET_AT_KNOWN_PLACE(saved_context.second_loc, \
+										 BINREWRITELIB_COMPUTE_OFFSET(saved_context.original_offset, \
+											 saved_context.original_multiplier, \
+											 RwL_cache->BgL_iindexz00)); \
+						} \
 						break; \
 					case UNTOUCHED: \
 						rewrite_opcode(RwL_info->labeladdr, \
 									RwL_cache, \
 									obj, \
-									saved_context); \
+									&(RwL_info->saved_context)); \
 						break; \
 					case INVALID: \
 						break; \
