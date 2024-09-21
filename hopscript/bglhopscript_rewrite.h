@@ -24,11 +24,11 @@
 #  include "RewriteLib.h"
 
 #  define HOP_REWRITE_LOCATIONS(n) \
-   static struct hop_rewriteinfo hop_rewriteinfo[n] = { 0 }
+   static struct hop_rewriteinfo hop_rewriteinfo[n] = { 0 };
 #  define HOP_REWRITE_INIT(n) \
-     init_rewrite_lib(n);
+	init_rewrite_lib(n);
 #  define HOP_REWRITE_IMAP_CACHE_HIT(n) \
-     BINREWRITELIB_EXPAND_LABEL(n):
+     BINREWRITELIB_CACHE_HIT(n)
 #  define HOP_REWRITE_CACHE_MISS(obj, index, cache) \
      BINREWRITELIB_CACHE_MISS_32(obj, index, cache)
 #  define HOP_REWRITE_INFO_SET(cache, n) \

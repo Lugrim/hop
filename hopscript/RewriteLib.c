@@ -107,6 +107,27 @@ void print_what_happened() {
 }
 #endif
 
+static struct timespec beginning_time;
+static struct timespec last_dbm_time;
+
+void update_warmup() {
+	clock_gettime(CLOCK_MONOTONIC,&last_dbm_time);
+}
+
+void print_warmup() {
+	time_t sec1 = beginning_time.tv_sec, sec2 = last_dbm_time.tv_sec;
+	unsigned long nano1 = beginning_time.tv_nsec, nano2 = last_dbm_time.tv_nsec;
+	unsigned long delta = 1000000000 * (sec2 - sec1) + (nano2-nano1);
+	fprintf(stderr, "WARMUP : %lu\n", delta);
+	fflush(stderr);
+}
+
+#include <signal.h> 
+
+void stop_benching(int sig) {
+	print_warmup();
+}
+
 void init_rewrite_lib(
 #ifdef TRACE_HIT_MISS
 		long* hit, long* miss, long* increment,
@@ -141,6 +162,19 @@ void init_rewrite_lib(
 #ifdef COUNT_WHATS_HAPPENING
 		atexit( print_what_happened );
 #endif
+
+		clock_gettime( CLOCK_MONOTONIC,&beginning_time );
+		last_dbm_time = beginning_time;
+		atexit( print_warmup );
+
+		struct sigaction new_action, old_action;
+
+		/* Set up the structure to specify the new action. */
+		new_action.sa_handler = stop_benching;
+		sigemptyset (&new_action.sa_mask);
+		new_action.sa_flags = 0;
+
+		sigaction (SIGTERM, &new_action, &old_action);
 	}
 
 #ifdef TRACE_HIT_MISS
@@ -859,7 +893,9 @@ int rewrite_opcode(
 #endif
 		fprintf(stderr, "\n");
 		saved_context->status = INVALID;
-		// fprintf(stderr, "unoptimized %p\n", location + i);
+		// fprintf(stderr, "unoptimized %p (instruction not found)\n", location + i);
+		/*clock_gettime(CLOCK_MONOTONIC,&last_dbm_time);*/
+	// fprintf(stderr, "%ld\n", last_dbm_time.tv_nsec);
 		return 1;
 	}
 
@@ -872,6 +908,8 @@ int rewrite_opcode(
 #endif
 
 	if(What_Should_RewriteLib_Do <= Disassemble) {
+		/*clock_gettime(CLOCK_MONOTONIC,&last_dbm_time);*/
+		/*fprintf(stderr, "%ld\n", last_dbm_time.tv_nsec);*/
 		return 7;
 	}
 
@@ -881,6 +919,8 @@ int rewrite_opcode(
 	unprotect_page(code);
 
 	if(What_Should_RewriteLib_Do <= Mprotect) {
+		/*clock_gettime(CLOCK_MONOTONIC,&last_dbm_time);*/
+		/*fprintf(stderr, "%ld\n", last_dbm_time.tv_nsec);*/
 		return 7;
 	}
 
@@ -900,15 +940,19 @@ int rewrite_opcode(
 		wfr = write_second_instr(&i, code, disas_context);
 		saved_context->second_loc = code + i;
 		saved_context->status = DOUBLE;
+		// fprintf(stderr, "optimized %p -O2\n", location + i);
 	} else {
 		if(What_Should_RewriteLib_Do <= Rewrite_Pair) {
 			saved_context->status = INVALID;
+			/*clock_gettime(CLOCK_MONOTONIC,&last_dbm_time);*/
+			/*fprintf(stderr, "%ld\n", last_dbm_time.tv_nsec);*/
 			return 7;
 		}
 
 		wfr = write_first_instr(&i, code, disas_context);
 		saved_context->first_loc = code + i;
 		saved_context->status = SINGLE;
+		// fprintf(stderr, "optimized %p -O1\n", location + i);
 	}
 
 	saved_context->original_offset = disas_context.next_load_memory.disp;
@@ -919,12 +963,16 @@ int rewrite_opcode(
 		fprintf(stderr, "ERROR: Could not write following register ; return code %d", wfr);
 		if(wfr == 3) {
 			fprintf(stderr, " (Not enough space)\n");
-			// fprintf(stderr, "unoptimized %p\n", location + i);
+			// fprintf(stderr, "unoptimized %p (not enough space)\n", location + i);
+			/*clock_gettime(CLOCK_MONOTONIC,&last_dbm_time);*/
+		// fprintf(stderr, "%ld\n", last_dbm_time.tv_nsec);
 			return 3;
 		}
 		fprintf(stderr, "\n");
 
-		// fprintf(stderr, "unoptimized %p\n", location + i);
+		/*fprintf(stderr, "unoptimized %p (other wfr error)\n", location + i);*/
+		/*clock_gettime(CLOCK_MONOTONIC,&last_dbm_time);*/
+	// fprintf(stderr, "%ld\n", last_dbm_time.tv_nsec);
 		return 2;
 	}
 
@@ -969,5 +1017,8 @@ int rewrite_opcode(
 #ifdef COUNT_WHATS_HAPPENING
 	actually_rewrote++;
 #endif
+	update_warmup();
+	/*clock_gettime(CLOCK_MONOTONIC,&last_dbm_time);*/
+	/*fprintf(stderr, "%ld\n", last_dbm_time.tv_nsec);*/
     return 0;
 }

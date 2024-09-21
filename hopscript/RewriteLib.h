@@ -63,6 +63,8 @@ struct hop_rewriteinfo {
 
 extern int What_Should_RewriteLib_Do;
 
+extern void update_warmup();
+
 #ifndef FAKE_JS_H
 // #include "FakeJs.h"
 #endif
@@ -70,6 +72,8 @@ extern int What_Should_RewriteLib_Do;
 ////////////
 // MACROS //
 ////////////
+
+#include <time.h>
 
 #define WRITE_OFFSET_AT_KNOWN_PLACE(location, offset) *((uint32_t*)(location)) = (uint32_t)(offset);
 
@@ -99,12 +103,14 @@ extern int What_Should_RewriteLib_Do;
 #define BINREWRITELIB_COMPUTE_OFFSET(o_off, o_mul, val) ((o_mul)*(val)+(o_off))
 
 #define BINREWRITELIB_CACHE_MISS_32(obj, uid, cache) \
+			(({\
 			struct BgL_jspropertycachez00_bgl *RwL_cache = (struct BgL_jspropertycachez00_bgl *)COBJECT(cache); \
 			struct hop_rewriteinfo *RwL_info = (struct hop_rewriteinfo *)RwL_cache->BgL_rewriteinfoz00; \
 			if (RwL_info && RwL_info != BUNSPEC) { \
 				Rewrite_CE saved_context = RwL_info->saved_context; \
 				switch (saved_context.status) { \
 					case SINGLE: \
+						update_warmup(); \
 						if (What_Should_RewriteLib_Do == Swap_Some_Bytes_Around) { \
 							DOUBLE_SWAP(saved_context.first_loc, char); \
 						} else { \
@@ -113,6 +119,7 @@ extern int What_Should_RewriteLib_Do;
 						} \
 						break; \
 					case DOUBLE: \
+						update_warmup(); \
 						if (What_Should_RewriteLib_Do == Swap_Some_Bytes_Around) { \
 							DOUBLE_SWAP(saved_context.second_loc, char); \
 						} else { \
@@ -134,7 +141,7 @@ extern int What_Should_RewriteLib_Do;
 						fprintf(stderr, "None of those cases?\n"); \
 						break; \
 				} \
-			}
+			}}), 0L)
 
 ///////////////
 // FUNCTIONS //
