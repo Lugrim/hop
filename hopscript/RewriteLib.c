@@ -110,15 +110,29 @@ void print_what_happened() {
 static struct timespec beginning_time;
 static struct timespec last_dbm_time;
 
+static size_t dbm_time = 0;
+static struct timespec dbm_times[10000];
+
 void update_warmup() {
-	clock_gettime(CLOCK_MONOTONIC,&last_dbm_time);
+	clock_gettime(CLOCK_MONOTONIC,&(dbm_times[dbm_time++]));
 }
 
 void print_warmup() {
-	time_t sec1 = beginning_time.tv_sec, sec2 = last_dbm_time.tv_sec;
-	unsigned long nano1 = beginning_time.tv_nsec, nano2 = last_dbm_time.tv_nsec;
-	unsigned long delta = 1000000000 * (sec2 - sec1) + (nano2-nano1);
-	fprintf(stderr, "WARMUP : %lu\n", delta);
+	time_t start_time = beginning_time.tv_sec;
+	unsigned long start_nano = beginning_time.tv_nsec;
+
+	fprintf(stderr, "======\nWARMUPS\n======\n");
+
+	time_t a_time;
+	unsigned long a_nano;
+	unsigned long delta;
+
+	for(size_t i = 0; i < dbm_time; i++) {
+		a_time = dbm_times[i].tv_sec;
+		a_nano = dbm_times[i].tv_nsec;
+		delta = 1000000000 * (a_time - start_time) + (a_nano - start_nano);
+		fprintf(stderr, "%lu\n", delta);
+	}
 	fflush(stderr);
 }
 
